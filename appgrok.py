@@ -19,7 +19,7 @@ from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_har
 import numpy as np
 from scipy.interpolate import make_interp_spline
 # Thiết lập xác thực Google BigQuery
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "C:/Airflow/dags/etl-cap3-27b899b6d343.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "etl-cap3-27b899b6d343.json"
 client = bigquery.Client(project='etl-cap3')
 
 #
