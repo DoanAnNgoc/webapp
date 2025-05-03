@@ -1,16 +1,10 @@
-
-
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
 import plotly.graph_objects as go
-import os
 from datetime import datetime, timedelta
-from google.cloud import bigquery
-from google.oauth2 import service_account
-import json
 from prophet import Prophet
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
@@ -18,33 +12,31 @@ from sklearn.mixture import GaussianMixture
 from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score, mean_absolute_error, mean_squared_error, r2_score
 import numpy as np
 from scipy.interpolate import make_interp_spline
-# Thiết lập xác thực Google BigQuery
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "etl-cap3-27b899b6d343.json"
-client = bigquery.Client(project='etl-cap3')
 
-#
+# Tải dữ liệu từ file CSV
+@st.cache_data
+def load_data():
+    df = pd.read_csv("finaldata.csv")
+    df['Order Date'] = pd.to_datetime(df['Order Date'], errors='coerce')
+    df['year'] = df['Order Date'].dt.year
+    # Đảm bảo các cột số
+    df['Order Total'] = pd.to_numeric(df['Order Total'], errors='coerce')
+    df['Product Cost'] = pd.to_numeric(df['Product Cost'], errors='coerce')
+    df['Shipping Fee'] = pd.to_numeric(df['Shipping Fee'], errors='coerce')
+    df['Profit'] = pd.to_numeric(df['Profit'], errors='coerce')
+    return df.dropna(subset=['Order Date', 'Order Total'])
+
+# Tải dữ liệu
+with st.spinner("Đang tải dữ liệu từ CSV..."):
+    df = load_data()
+
+# Tiêu đề và mô tả
 st.title("Đề Án Tốt Nghiệp - Phân Tích Doanh Thu và Phân Cụm Khách Hàng")
 st.markdown("""
 Ứng dụng này hiển thị phân cụm khách hàng, dự đoán doanh thu, 
-và các biểu đồ phân tích dựa trên dữ liệu được lưu ở Google BigQuery sau quá trình ETL Pipeline trước đó.
+và các biểu đồ phân tích dựa trên dữ liệu từ file CSV.
 Bạn vui lòng chọn tab để xem các phân tích chi tiết.
 """)
-
-# Tải dữ liệu từ BigQuery
-@st.cache_data
-def load_data():
-    query = """
-        SELECT * FROM etl-cap3.Sale_AMZ_ETSY.FinalData
-        LIMIT 500000000
-    """
-    df = client.query(query).to_dataframe()
-    df['Order Date'] = pd.to_datetime(df['Order Date'])
-    df['year'] = df['Order Date'].dt.year
-    return df
-
-# Tải dữ liệu
-with st.spinner("Đang tải dữ liệu từ BigQuery..."):
-    df = load_data()
 
 # Tạo các tab
 tab1, tab2, tab3 = st.tabs(["📊 Tổng Quan Doanh Thu", "💵 Dự Đoán Doanh Thu", "📀 Phân Cụm Khách Hàng"])
@@ -60,7 +52,7 @@ with tab1:
     fig.update_layout(xaxis_tickangle=0, yaxis=dict(griddash='dash', gridcolor='gray'))
     st.plotly_chart(fig)
 
-   # Thêm biểu đồ Tổng Order Total theo Sub-Category (động)
+    # Thêm biểu đồ Tổng Order Total theo Sub-Category (động)
     st.subheader("Tổng Order Total theo Sub-Category Theo Năm")
     
     # Tính tổng Order Total theo Sub-Category và Year
@@ -109,6 +101,7 @@ with tab1:
         plt.close()  # Đóng figure để tránh xung đột
     else:
         st.warning("Không có dữ liệu để hiển thị biểu đồ theo Sub-Category.")
+
 # Tab 2: Dự Đoán Doanh Thu
 with tab2:
     st.header("💵 Dự Đoán Doanh Thu với Prophet")
@@ -212,6 +205,7 @@ with tab2:
     st.write(f"📈 Giá trị dự đoán: **${selected_forecast['yhat'].iloc[0]:,.2f}**")
     st.write(f"📉 Khoảng tin cậy thấp: **${selected_forecast['yhat_lower'].iloc[0]:,.2f}**")
     st.write(f"📊 Khoảng tin cậy cao: **${selected_forecast['yhat_upper'].iloc[0]:,.2f}**")
+
 # Tab 3: Phân Cụm Khách Hàng
 with tab3:
     st.header("📀 Phân Cụm Khách Hàng với GMM")
@@ -250,7 +244,7 @@ with tab3:
     st.subheader("Đặc Trưng Trung Bình của Từng Cụm")
     st.dataframe(cluster_summary)
 
-    # Đánh giá mô hình phân cụm (từ Tab 4)
+    # Đánh giá mô hình phân cụm
     st.subheader("Đánh Giá Mô Hình Phân Cụm")
     df_valid = df_sample.dropna(subset=['Cluster'])
     X_valid = df_pca
@@ -267,4 +261,4 @@ with tab3:
 
 # Footer
 st.markdown("---")
-st.markdown("Web App Demo Đề Án Tốt Nghiệp được xây dựng với Streamlit bởi Ấn Ngọc . Liên hệ hỗ trợ: anngocmukbang@gmail.com")
+st.markdown("Web App Demo Đề Án Tốt Nghiệp được xây dựng với Streamlit bởi Ấn Ngọc. Liên hệ hỗ trợ: anngocmukbang@gmail.com")
