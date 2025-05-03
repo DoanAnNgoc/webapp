@@ -13,10 +13,11 @@ from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_har
 import numpy as np
 from scipy.interpolate import make_interp_spline
 
-# Tải dữ liệu từ file CSV
+# Tải dữ liệu từ Google Drive
 @st.cache_data
 def load_data():
-    df = pd.read_csv("finaldata.csv")
+    FILE_URL = "https://drive.google.com/uc?export=download&id=18AUFMMZ7vuJUDxGMNpJKR_suqc5Jrg5h"
+    df = pd.read_csv(FILE_URL)
     df['Order Date'] = pd.to_datetime(df['Order Date'], errors='coerce')
     df['year'] = df['Order Date'].dt.year
     # Đảm bảo các cột số
@@ -27,14 +28,14 @@ def load_data():
     return df.dropna(subset=['Order Date', 'Order Total'])
 
 # Tải dữ liệu
-with st.spinner("Đang tải dữ liệu từ CSV..."):
+with st.spinner("Đang tải dữ liệu từ Google Drive..."):
     df = load_data()
 
 # Tiêu đề và mô tả
 st.title("Đề Án Tốt Nghiệp - Phân Tích Doanh Thu và Phân Cụm Khách Hàng")
 st.markdown("""
 Ứng dụng này hiển thị phân cụm khách hàng, dự đoán doanh thu, 
-và các biểu đồ phân tích dựa trên dữ liệu từ file CSV.
+và các biểu đồ phân tích dựa trên dữ liệu từ file CSV trên Google Drive.
 Bạn vui lòng chọn tab để xem các phân tích chi tiết.
 """)
 
